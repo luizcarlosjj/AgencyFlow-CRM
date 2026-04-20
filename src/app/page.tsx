@@ -11,7 +11,7 @@ function formatCurrency(value: number) {
 }
 
 const alerts = [
-  { id: 1, message: 'CPA de Beta Comércio — Google Display subiu para R$186', severity: 'high', campaign: 'Beta — Google Display' },
+  { id: 1, message: 'CPA da Beta Comércio — Google Display subiu para R$186', severity: 'high', campaign: 'Beta — Google Display' },
   { id: 2, message: 'Gasto da Gamma Serviços — Meta Stories próximo do limite', severity: 'medium', campaign: 'Gamma — Meta Stories' },
 ];
 
@@ -22,7 +22,7 @@ export default function DashboardPage() {
   return (
     <>
       <Header title="Dashboard" subtitle="Visão geral da agência — Abril 2026" />
-      <main className="flex-1 p-6 space-y-6 overflow-y-auto">
+      <main className="flex-1 p-6 space-y-6 overflow-y-auto animate-page">
 
         {/* KPI Cards */}
         <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -34,7 +34,7 @@ export default function DashboardPage() {
             accent
           />
           <MetricCard
-            title="Clientes Activos"
+            title="Clientes Ativos"
             value={String(kpis.activeClients)}
             change={0}
             changeLabel="estável"
@@ -56,13 +56,13 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Revenue Chart */}
-          <div className="xl:col-span-2 bg-white rounded-xl border border-[#E5E7EB] p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="xl:col-span-2 bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-6">
+            <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="text-base font-semibold text-[#1F2937]">Faturação Mensal</h2>
-                <p className="text-sm text-[#6B7280]">Receita vs. Meta dos últimos 6 meses</p>
+                <h2 className="text-base font-heading font-semibold text-[#1F2937]">Faturamento Mensal</h2>
+                <p className="text-xs text-[#9CA3AF] mt-0.5">Receita vs. Meta dos últimos 6 meses</p>
               </div>
-              <div className="flex items-center gap-4 text-xs text-[#6B7280]">
+              <div className="flex items-center gap-4 text-xs text-[#9CA3AF]">
                 <span className="flex items-center gap-1.5">
                   <span className="w-3 h-0.5 bg-[#FF6B00] inline-block rounded" />
                   Receita
@@ -77,29 +77,29 @@ export default function DashboardPage() {
           </div>
 
           {/* Alerts + Status */}
-          <div className="bg-white rounded-xl border border-[#E5E7EB] p-6 space-y-4">
-            <h2 className="text-base font-semibold text-[#1F2937]">Alertas Activos</h2>
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-6 space-y-4">
+            <h2 className="text-base font-heading font-semibold text-[#1F2937]">Alertas Ativos</h2>
             <div className="space-y-3">
               {alerts.map((alert) => (
                 <div
                   key={alert.id}
-                  className={`p-3 rounded-lg border ${
-                    alert.severity === 'high' ? 'bg-red-50 border-red-100' : 'bg-yellow-50 border-yellow-100'
+                  className={`p-3 rounded-xl border transition-all duration-200 hover:scale-[1.01] ${
+                    alert.severity === 'high' ? 'bg-red-50 border-red-100' : 'bg-amber-50 border-amber-100'
                   }`}
                 >
                   <div className="flex gap-2">
-                    <AlertTriangle className={`w-4 h-4 mt-0.5 shrink-0 ${alert.severity === 'high' ? 'text-red-500' : 'text-yellow-500'}`} />
+                    <AlertTriangle className={`w-4 h-4 mt-0.5 shrink-0 ${alert.severity === 'high' ? 'text-red-500' : 'text-amber-500'}`} />
                     <div>
                       <p className="text-sm text-[#1F2937] font-medium leading-tight">{alert.message}</p>
-                      <p className="text-xs text-[#6B7280] mt-1">{alert.campaign}</p>
+                      <p className="text-xs text-[#9CA3AF] mt-1">{alert.campaign}</p>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="pt-4 border-t border-[#E5E7EB] space-y-3">
-              <h3 className="text-sm font-semibold text-[#1F2937]">Clientes por Status</h3>
+            <div className="pt-4 border-t border-[#F3F4F6] space-y-2.5">
+              <h3 className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wide">Clientes por Status</h3>
               {(['active', 'paused', 'churned'] as const).map((s) => {
                 const count = mockClients.filter((c) => c.status === s).length;
                 return (
@@ -114,26 +114,26 @@ export default function DashboardPage() {
         </div>
 
         {/* Top Campaigns Table */}
-        <div className="bg-white rounded-xl border border-[#E5E7EB] p-6">
-          <h2 className="text-base font-semibold text-[#1F2937] mb-4">Campanhas em Destaque</h2>
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm p-6">
+          <h2 className="text-base font-heading font-semibold text-[#1F2937] mb-5">Campanhas em Destaque</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#E5E7EB]">
+                <tr className="border-b border-[#F3F4F6]">
                   {['Campanha', 'Plataforma', 'Gasto', 'Conversões', 'CPA', 'Status'].map((h) => (
-                    <th key={h} className="text-left py-2 px-3 text-xs font-semibold text-[#6B7280] uppercase tracking-wide">{h}</th>
+                    <th key={h} className="text-left py-2 px-3 text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {topCampaigns.map((c) => (
-                  <tr key={c.id} className="border-b border-[#F3F4F6] hover:bg-[#F9FAFB] transition-colors">
-                    <td className="py-3 px-3 font-medium text-[#1F2937]">{c.name}</td>
-                    <td className="py-3 px-3"><PlatformBadge platform={c.platform} /></td>
-                    <td className="py-3 px-3 text-[#1F2937]">{formatCurrency(c.spend)}</td>
-                    <td className="py-3 px-3 text-[#1F2937]">{c.conversions}</td>
-                    <td className={`py-3 px-3 font-semibold ${c.cpa > 150 ? 'text-red-600' : 'text-emerald-600'}`}>{formatCurrency(c.cpa)}</td>
-                    <td className="py-3 px-3"><StatusBadge status={c.status} /></td>
+                  <tr key={c.id} className="border-b border-[#F9FAFB] hover:bg-[#FFFAF7] transition-all duration-150 cursor-pointer">
+                    <td className="py-3.5 px-3 font-medium text-[#1F2937]">{c.name}</td>
+                    <td className="py-3.5 px-3"><PlatformBadge platform={c.platform} /></td>
+                    <td className="py-3.5 px-3 text-[#374151]">{formatCurrency(c.spend)}</td>
+                    <td className="py-3.5 px-3 text-[#374151]">{c.conversions}</td>
+                    <td className={`py-3.5 px-3 font-semibold ${c.cpa > 150 ? 'text-red-500' : 'text-emerald-600'}`}>{formatCurrency(c.cpa)}</td>
+                    <td className="py-3.5 px-3"><StatusBadge status={c.status} /></td>
                   </tr>
                 ))}
               </tbody>

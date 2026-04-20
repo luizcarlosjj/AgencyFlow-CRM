@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Inter, Poppins } from 'next/font/google';
 import './globals.css';
-import Sidebar from '@/components/layout/Sidebar';
 
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
-const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
+const inter = Inter({ variable: '--font-inter', subsets: ['latin'], display: 'swap' });
+const poppins = Poppins({ variable: '--font-poppins', subsets: ['latin'], weight: ['500', '600', '700'], display: 'swap' });
 
 export const metadata: Metadata = {
   title: 'AgencyFlow CRM',
@@ -13,12 +12,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-screen flex bg-[#F9FAFB]">
-        <Sidebar />
-        <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
-          {children}
-        </div>
+    <html lang="pt-BR" className={`${inter.variable} ${poppins.variable} h-full antialiased`}>
+      <body className="min-h-screen bg-[#F9FAFB] font-sans">
+        {children}
       </body>
     </html>
   );

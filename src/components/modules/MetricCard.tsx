@@ -21,18 +21,18 @@ export default function MetricCard({
 
   return (
     <div
-      className={`rounded-xl p-5 border ${
+      className={`rounded-2xl p-5 border transition-all duration-200 hover:-translate-y-0.5 ${
         accent
-          ? 'bg-[#FF6B00] border-[#FF6B00] text-white'
-          : 'bg-white border-[#E5E7EB] text-[#1F2937]'
+          ? 'bg-gradient-to-br from-[#FF6B00] to-[#FF8C33] border-transparent text-white shadow-lg shadow-orange-200'
+          : 'bg-white border-[#E5E7EB] text-[#1F2937] shadow-sm hover:shadow-md'
       }`}
     >
       <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className={`text-sm font-medium ${accent ? 'text-orange-100' : 'text-[#6B7280]'}`}>
+        <div className="flex-1 min-w-0">
+          <p className={`text-xs font-medium uppercase tracking-wide ${accent ? 'text-orange-100' : 'text-[#9CA3AF]'}`}>
             {title}
           </p>
-          <p className={`text-2xl font-bold mt-1 ${accent ? 'text-white' : 'text-[#1F2937]'}`}>
+          <p className={`text-2xl font-heading font-bold mt-1.5 ${accent ? 'text-white' : 'text-[#1F2937]'}`}>
             {value}
           </p>
           {change !== undefined && (
@@ -40,7 +40,7 @@ export default function MetricCard({
               {isPositive ? (
                 <TrendingUp className={`w-3 h-3 ${accent ? 'text-orange-200' : 'text-emerald-500'}`} />
               ) : (
-                <TrendingDown className={`w-3 h-3 ${accent ? 'text-orange-200' : 'text-red-500'}`} />
+                <TrendingDown className={`w-3 h-3 ${accent ? 'text-orange-200' : 'text-red-400'}`} />
               )}
               <span
                 className={`text-xs font-medium ${
@@ -48,7 +48,7 @@ export default function MetricCard({
                     ? 'text-orange-100'
                     : isPositive
                     ? 'text-emerald-600'
-                    : 'text-red-600'
+                    : 'text-red-500'
                 }`}
               >
                 {isPositive ? '+' : ''}
@@ -58,7 +58,7 @@ export default function MetricCard({
           )}
         </div>
         <div
-          className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+          className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ml-3 ${
             accent ? 'bg-white/20' : 'bg-[#FFF0E6]'
           }`}
         >

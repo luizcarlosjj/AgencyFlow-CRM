@@ -1,29 +1,20 @@
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import type { RevenueLog } from '@/lib/types';
 
 export const revenueRepository = {
-  async getByClient(clientId: string): Promise<RevenueLog[]> {
-    const { data, error } = await supabase
-      .from('revenue_logs')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('date', { ascending: false });
-    if (error) throw error;
-    return data;
-  },
-
-  async getByMonth(agencyId: string, month: string): Promise<RevenueLog[]> {
+  async getAllByAgency(agencyId: string): Promise<RevenueLog[]> {
+    const supabase = createClient();
     const { data, error } = await supabase
       .from('revenue_logs')
       .select('*, clients!inner(agency_id)')
       .eq('clients.agency_id', agencyId)
-      .gte('date', `${month}-01`)
-      .lt('date', `${month}-31`);
+      .order('date', { ascending: false });
     if (error) throw error;
-    return data;
+    return (data ?? []).map(({ clients: _c, ...r }) => r as RevenueLog);
   },
 
   async create(log: Omit<RevenueLog, 'id' | 'created_at'>): Promise<RevenueLog> {
+    const supabase = createClient();
     const { data, error } = await supabase
       .from('revenue_logs')
       .insert(log)
@@ -33,7 +24,8 @@ export const revenueRepository = {
     return data;
   },
 
-  async update(id: string, updates: Partial<RevenueLog>): Promise<RevenueLog> {
+  async update(id: string, updates: Partial<Omit<RevenueLog, 'id' | 'created_at'>>): Promise<RevenueLog> {
+    const supabase = createClient();
     const { data, error } = await supabase
       .from('revenue_logs')
       .update(updates)
@@ -42,5 +34,11 @@ export const revenueRepository = {
       .single();
     if (error) throw error;
     return data;
+  },
+
+  async remove(id: string): Promise<void> {
+    const supabase = createClient();
+    const { error } = await supabase.from('revenue_logs').delete().eq('id', id);
+    if (error) throw error;
   },
 };
