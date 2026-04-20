@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Loader2, AlertCircle, Zap, Link2, CheckCircle2, XCircle } from 'lucide-react';
 import { useAgencyContext } from '@/components/providers/AgencyProvider';
 import { useAutomation } from '@/hooks/useAutomation';
@@ -8,20 +8,24 @@ import AutomationModal from '@/components/modules/AutomationModal';
 import type { AutomationRule, RuleCondition } from '@/lib/types';
 import { ACTION_LABELS, ENTITY_LABELS, TEMPLATES, type AutomationTemplate, type EntityLevel, type ActionType } from '@/services/ads/types';
 
-function ConnectCard({ provider, label, connected, accountName, onConnect, onDisconnect }: {
+function ConnectCard({ provider, label, connected, accountName, connecting, onConnect, onDisconnect }: {
   provider: string; label: string; connected: boolean; accountName?: string;
-  onConnect: () => void; onDisconnect: () => void;
+  connecting: boolean; onConnect: () => void; onDisconnect: () => void;
 }) {
   return (
     <div className={`rounded-2xl border p-4 flex items-center justify-between ${connected ? 'border-green-200 bg-green-50' : 'border-[#E5E7EB] bg-white'}`}>
       <div>
         <p className="text-sm font-semibold text-[#1F2937]">{label}</p>
-        <p className="text-xs text-[#9CA3AF] mt-0.5">{connected ? accountName ?? 'Conectado' : 'Não conectado'}</p>
+        <p className="text-xs text-[#9CA3AF] mt-0.5">
+          {connecting ? 'Aguardando autorização…' : connected ? accountName ?? 'Conectado' : 'Não conectado'}
+        </p>
       </div>
       {connected
         ? <button onClick={onDisconnect} className="text-xs text-red-500 hover:underline font-medium">Desconectar</button>
-        : <button onClick={onConnect} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-[#FF6B00] text-white rounded-lg hover:bg-[#e65c00] transition-all">
-            <Link2 className="w-3 h-3" /> Conectar
+        : <button onClick={onConnect} disabled={connecting}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-[#FF6B00] text-white rounded-lg hover:bg-[#e65c00] transition-all disabled:opacity-60">
+            {connecting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Link2 className="w-3 h-3" />}
+            {connecting ? 'Conectando…' : 'Conectar'}
           </button>
       }
     </div>
@@ -78,15 +82,32 @@ function RuleCard({ rule, onToggle, onDelete, toggling, deleting }: {
 
 export default function AutomationPage() {
   const { agency } = useAgencyContext();
-  const { rules, logs, tokens, loading, error, createRule, updateRule, removeRule, disconnectToken } = useAutomation(agency.id);
+  const { rules, logs, tokens, loading, error, refetch, createRule, updateRule, removeRule, disconnectToken } = useAutomation(agency.id);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
   const [tab, setTab] = useState<'rules' | 'logs'>('rules');
+  const [connectingProvider, setConnectingProvider] = useState<string | null>(null);
+  const popupRef = useRef<Window | null>(null);
 
-  const metaToken = tokens.find((t) => t.provider === 'meta');
+  const metaToken   = tokens.find((t) => t.provider === 'meta');
   const googleToken = tokens.find((t) => t.provider === 'google_ads');
+
+  // Escuta mensagem do popup OAuth e atualiza a lista de tokens
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== 'oauth_complete') return;
+      setConnectingProvider(null);
+      popupRef.current = null;
+      if (!event.data.error) {
+        refetch();
+      }
+    }
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [refetch]);
 
   const handleToggle = async (rule: AutomationRule) => {
     setToggling(rule.id);
@@ -99,13 +120,19 @@ export default function AutomationPage() {
     try { await removeRule(id); } finally { setDeleting(null); }
   };
 
-  const connectMeta = () => {
-    window.location.href = `/api/auth/meta?agency_id=${agency.id}`;
-  };
+  function openOAuthPopup(url: string, provider: string) {
+    const w = 600, h = 700;
+    const left = Math.round(window.screenX + (window.outerWidth - w) / 2);
+    const top  = Math.round(window.screenY + (window.outerHeight - h) / 2);
+    const popup = window.open(url, `oauth_${provider}`, `width=${w},height=${h},left=${left},top=${top},scrollbars=yes`);
+    if (popup) {
+      popupRef.current = popup;
+      setConnectingProvider(provider);
+    }
+  }
 
-  const connectGoogle = () => {
-    window.location.href = `/api/auth/google-ads?agency_id=${agency.id}`;
-  };
+  const connectMeta   = () => openOAuthPopup(`/api/auth/meta?agency_id=${agency.id}`, 'meta');
+  const connectGoogle = () => openOAuthPopup(`/api/auth/google-ads?agency_id=${agency.id}`, 'google');
 
   return (
     <main className="flex-1 p-6 space-y-6 animate-page">
@@ -123,9 +150,9 @@ export default function AutomationPage() {
       {/* Integrações */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <ConnectCard provider="meta" label="Meta Ads" connected={!!metaToken} accountName={metaToken?.account_name}
-          onConnect={connectMeta} onDisconnect={() => disconnectToken('meta')} />
+          connecting={connectingProvider === 'meta'} onConnect={connectMeta} onDisconnect={() => disconnectToken('meta')} />
         <ConnectCard provider="google_ads" label="Google Ads" connected={!!googleToken} accountName={googleToken?.account_name}
-          onConnect={connectGoogle} onDisconnect={() => disconnectToken('google_ads')} />
+          connecting={connectingProvider === 'google'} onConnect={connectGoogle} onDisconnect={() => disconnectToken('google_ads')} />
       </div>
 
       {/* Tabs */}

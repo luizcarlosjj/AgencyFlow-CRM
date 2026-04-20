@@ -7,9 +7,15 @@ export async function GET(request: NextRequest) {
   const code     = searchParams.get('code');
   const agencyId = searchParams.get('state');
   const error    = searchParams.get('error');
+  const appUrl   = process.env.NEXT_PUBLIC_APP_URL ?? origin;
+
+  const completeUrl = (err?: string) =>
+    err
+      ? `${appUrl}/auth/oauth-complete?provider=meta&error=${encodeURIComponent(err)}`
+      : `${appUrl}/auth/oauth-complete?provider=meta`;
 
   if (error || !code || !agencyId) {
-    return NextResponse.redirect(`${origin}/automation?error=meta_auth_failed`);
+    return NextResponse.redirect(completeUrl(error ?? 'meta_auth_failed'));
   }
 
   // Troca code por access_token
@@ -19,26 +25,27 @@ export async function GET(request: NextRequest) {
     body: new URLSearchParams({
       client_id:     process.env.META_APP_ID ?? '',
       client_secret: process.env.META_APP_SECRET ?? '',
-      redirect_uri:  `${origin}/api/auth/meta/callback`,
+      redirect_uri:  `${appUrl}/api/auth/meta/callback`,
       code,
     }),
   });
   const tokenData = await tokenRes.json();
 
   if (!tokenRes.ok || !tokenData.access_token) {
-    return NextResponse.redirect(`${origin}/automation?error=meta_token_failed`);
+    const msg = tokenData.error?.message ?? 'meta_token_failed';
+    return NextResponse.redirect(completeUrl(msg));
   }
 
-  // Busca info da conta de Ads
+  // Busca contas de Ads do usuário
   const meRes = await fetch(
-    `https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name&access_token=${tokenData.access_token}`,
+    `https://graph.facebook.com/v19.0/me/adaccounts?fields=id,name`,
+    { headers: { Authorization: `Bearer ${tokenData.access_token}` } },
   );
   const meData = await meRes.json();
   const account = meData.data?.[0];
 
-  // Persiste no banco via service_role (sem RLS)
   const supabase = await createClient();
-  await supabase.from('integration_tokens').upsert({
+  const { error: dbError } = await supabase.from('integration_tokens').upsert({
     agency_id:     agencyId,
     provider:      'meta',
     access_token:  tokenData.access_token,
@@ -51,5 +58,7 @@ export async function GET(request: NextRequest) {
     updated_at:    new Date().toISOString(),
   }, { onConflict: 'agency_id,provider' });
 
-  return NextResponse.redirect(`${origin}/automation?connected=meta`);
+  if (dbError) return NextResponse.redirect(completeUrl(dbError.message));
+
+  return NextResponse.redirect(completeUrl());
 }

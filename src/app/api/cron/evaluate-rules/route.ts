@@ -52,15 +52,16 @@ export async function POST(request: NextRequest) {
 
     const token = tokenRow as IntegrationToken | null;
     const entityId = token?.account_id ?? `mock-entity-${rule.id}`;
-    const timeWindow = rule.condition_group.conditions[0]?.time_window ?? '1d';
+    const timeWindow = rule.condition_group.conditions[0]?.time_window ?? '7d';
+    const level = (rule.entity_level ?? 'campaign') as import('@/services/ads/types').EntityLevel;
 
-    // Busca métricas (mock se não houver token real)
+    // Busca métricas reais — falha se token ausente
     let metrics;
     try {
       if (rule.platform === 'google') {
         metrics = await googleMetrics(token?.account_id ?? '', entityId, timeWindow, token?.access_token);
       } else {
-        metrics = await metaMetrics(entityId, timeWindow, token?.access_token);
+        metrics = await metaMetrics(entityId, level, timeWindow, token?.access_token);
       }
     } catch {
       metrics = null;
@@ -71,14 +72,14 @@ export async function POST(request: NextRequest) {
         rule_id: rule.id, agency_id: rule.agency_id, rule_name: rule.name,
         platform: rule.platform, entity_id: entityId, conditions_met: false,
         action_taken: 'skipped', success: false,
-        error_message: 'Não foi possível buscar métricas', mock_mode: !token,
+        error_message: 'Não foi possível buscar métricas', mock_mode: false,
       });
       continue;
     }
 
     const conditionsMet = evaluateConditionGroup(metrics, rule.condition_group);
 
-    let mutationResult = { success: true, entity_id: entityId, action: 'no_action', mock_mode: !token };
+    let mutationResult = { success: true, entity_id: entityId, action: 'no_action', mock_mode: false };
 
     if (conditionsMet) {
       mutationResult = await executeAction(rule, entityId, rule.action_config, metrics, token ?? undefined);

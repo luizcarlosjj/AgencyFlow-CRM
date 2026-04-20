@@ -7,9 +7,15 @@ export async function GET(request: NextRequest) {
   const code     = searchParams.get('code');
   const agencyId = searchParams.get('state');
   const error    = searchParams.get('error');
+  const appUrl   = process.env.NEXT_PUBLIC_APP_URL ?? origin;
+
+  const completeUrl = (err?: string) =>
+    err
+      ? `${appUrl}/auth/oauth-complete?provider=google&error=${encodeURIComponent(err)}`
+      : `${appUrl}/auth/oauth-complete?provider=google`;
 
   if (error || !code || !agencyId) {
-    return NextResponse.redirect(`${origin}/automation?error=google_auth_failed`);
+    return NextResponse.redirect(completeUrl(error ?? 'google_auth_failed'));
   }
 
   // Troca code por tokens
@@ -20,14 +26,15 @@ export async function GET(request: NextRequest) {
       code,
       client_id:     process.env.GOOGLE_CLIENT_ID ?? '',
       client_secret: process.env.GOOGLE_CLIENT_SECRET ?? '',
-      redirect_uri:  `${origin}/api/auth/google-ads/callback`,
+      redirect_uri:  `${appUrl}/api/auth/google-ads/callback`,
       grant_type:    'authorization_code',
     }),
   });
   const tokenData = await tokenRes.json();
 
   if (!tokenRes.ok || !tokenData.access_token) {
-    return NextResponse.redirect(`${origin}/automation?error=google_token_failed`);
+    const msg = tokenData.error_description ?? tokenData.error ?? 'google_token_failed';
+    return NextResponse.redirect(completeUrl(msg));
   }
 
   // Busca Customer IDs acessíveis
@@ -35,17 +42,17 @@ export async function GET(request: NextRequest) {
     'https://googleads.googleapis.com/v14/customers:listAccessibleCustomers',
     {
       headers: {
-        Authorization: `Bearer ${tokenData.access_token}`,
+        Authorization:     `Bearer ${tokenData.access_token}`,
         'developer-token': process.env.GOOGLE_ADS_DEVELOPER_TOKEN ?? '',
       },
     },
   );
   const customersData = await customersRes.json();
-  const firstAccount = customersData.resourceNames?.[0] ?? null;
-  const customerId = firstAccount?.replace('customers/', '') ?? null;
+  const firstAccount  = customersData.resourceNames?.[0] ?? null;
+  const customerId    = firstAccount?.replace('customers/', '') ?? null;
 
   const supabase = await createClient();
-  await supabase.from('integration_tokens').upsert({
+  const { error: dbError } = await supabase.from('integration_tokens').upsert({
     agency_id:     agencyId,
     provider:      'google_ads',
     access_token:  tokenData.access_token,
@@ -58,5 +65,7 @@ export async function GET(request: NextRequest) {
     updated_at:    new Date().toISOString(),
   }, { onConflict: 'agency_id,provider' });
 
-  return NextResponse.redirect(`${origin}/automation?connected=google`);
+  if (dbError) return NextResponse.redirect(completeUrl(dbError.message));
+
+  return NextResponse.redirect(completeUrl());
 }
