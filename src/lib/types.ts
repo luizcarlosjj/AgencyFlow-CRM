@@ -8,6 +8,17 @@ export type RuleMetric = 'cpa' | 'spend' | 'conversions';
 export type RuleOperator = '>' | '<' | '==';
 export type RuleAction = 'alert' | 'pause';
 
+// Importa e re-exporta compound types do motor de regras
+import type {
+  ConditionGroup, RuleCondition, RuleActionConfig, DaypartingSchedule,
+  AdsPlatform, EntityLevel, AutomationTemplate, MetricKey, ActionType,
+} from '@/services/ads/types';
+
+export type {
+  ConditionGroup, RuleCondition, RuleActionConfig, DaypartingSchedule,
+  AdsPlatform, EntityLevel, AutomationTemplate, MetricKey, ActionType,
+};
+
 export interface Agency {
   id: string;
   name: string;
@@ -57,12 +68,52 @@ export interface AutomationRule {
   id: string;
   agency_id: string;
   name: string;
-  metric: RuleMetric;
-  operator: RuleOperator;
-  threshold: number;
-  action: RuleAction;
+  description?: string;
+  // Campos legados (regras simples)
+  metric?: RuleMetric;
+  operator?: RuleOperator;
+  threshold?: number;
+  action?: RuleAction;
+  // Campos compostos (novo motor)
+  platform?: AdsPlatform;
+  entity_level?: EntityLevel;
+  condition_group?: ConditionGroup;
+  action_config?: RuleActionConfig;
+  template?: AutomationTemplate;
+  schedule?: DaypartingSchedule;
   is_active: boolean;
   created_at: string;
+}
+
+export interface AutomationLog {
+  id: string;
+  rule_id?: string;
+  agency_id: string;
+  rule_name: string;
+  platform?: string;
+  entity_id?: string;
+  entity_name?: string;
+  entity_level?: string;
+  metrics_snapshot?: Record<string, number>;
+  conditions_met: boolean;
+  action_taken?: string;
+  success: boolean;
+  error_message?: string;
+  mock_mode: boolean;
+  created_at: string;
+}
+
+export interface IntegrationToken {
+  id: string;
+  agency_id: string;
+  provider: 'meta' | 'google_ads';
+  access_token: string;
+  refresh_token?: string;
+  expires_at?: string;
+  account_id?: string;
+  account_name?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // ─── Ads API Interfaces (ready for real Google/Meta integration) ──────────────

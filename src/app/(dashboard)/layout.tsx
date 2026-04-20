@@ -11,26 +11,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (userError || !user) redirect('/login');
 
   // Busca ou cria a agência do usuário
-  let { data: agency } = await supabase
+  let { data: agency, error: agencyError } = await supabase
     .from('agencies')
     .select('*')
     .eq('owner_id', user.id)
     .single();
 
-  if (!agency) {
-    const { data: newAgency } = await supabase
-      .from('agencies')
-      .insert({
-        owner_id: user.id,
-        name: user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'Minha Agência',
-        settings: { currency: 'BRL', monthly_goal: 50000 },
-      })
-      .select()
-      .single();
-    agency = newAgency;
-  }
-
-  if (!agency) redirect('/login');
+  // PGRST116 = nenhuma linha encontrada — redireciona para onboarding
+  if (!agency) redirect('/setup');
 
   return (
     <AgencyProvider agency={agency as Agency} user={user}>

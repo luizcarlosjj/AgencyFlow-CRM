@@ -3,7 +3,10 @@
     "allow": [
       "Bash(npx create-next-app@latest agencyflow-crm --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git)",
       "Bash(npx shadcn@latest init -y --defaults)",
-      "Bash(npx shadcn@latest add card table badge select separator sheet dialog)"
+      "Bash(npx shadcn@latest add card table badge select separator sheet dialog)",
+      "Bash(ls /proc)",
+      "Bash(tasklist)",
+      "Read(//proc/1298/fd/**)"
     ]
   }
 }

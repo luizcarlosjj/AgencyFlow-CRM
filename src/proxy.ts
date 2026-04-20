@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -33,6 +33,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isPublicRoute =
     pathname.startsWith('/login') ||
+    pathname.startsWith('/setup') ||
     pathname.startsWith('/auth/') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon');
@@ -44,11 +45,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redireciona para dashboard se já autenticado e tentou acessar login
-  if (user && pathname === '/login') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/';
-    return NextResponse.redirect(url);
+  // Redireciona para dashboard se já autenticado e tentou acessar login ou setup
+  if (user && (pathname === '/login' || pathname === '/setup')) {
+    // Deixa /setup passar — o próprio layout do dashboard redireciona para /setup se não tiver agência
+    if (pathname === '/login') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;
