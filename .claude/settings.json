@@ -6,7 +6,11 @@
       "Bash(npx shadcn@latest add card table badge select separator sheet dialog)",
       "Bash(ls /proc)",
       "Bash(tasklist)",
-      "Read(//proc/1298/fd/**)"
+      "Read(//proc/1298/fd/**)",
+      "Bash(npx tsc *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Auvo\\Documents\\GitHub\\AgencyFlow-CRM\\src\\app\\api\\clients\\[id]"
     ]
   }
 }

@@ -38,7 +38,18 @@ export interface Client {
   monthly_fee: number;
   contact_email?: string;
   next_payment_date?: string;
+  google_customer_id?: string;
+  meta_ad_account_id?: string;
   created_at: string;
+}
+
+export interface LiveCampaign {
+  external_id: string;
+  name: string;
+  status: 'ENABLED' | 'PAUSED' | 'ACTIVE' | 'REMOVED';
+  platform: 'google' | 'meta';
+  daily_budget: number;
+  budget_resource?: string;
 }
 
 export interface Campaign {
@@ -81,6 +92,7 @@ export interface AutomationRule {
   action_config?: RuleActionConfig;
   template?: AutomationTemplate;
   schedule?: DaypartingSchedule;
+  client_id?: string;
   is_active: boolean;
   created_at: string;
 }

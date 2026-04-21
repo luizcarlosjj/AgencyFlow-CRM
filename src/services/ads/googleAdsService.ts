@@ -137,6 +137,58 @@ export async function updateCampaignBudget(
   return { success: true, entity_id: budgetResourceName, action: `set_budget_${newAmountMicros}`, mock_mode: false };
 }
 
+// ─── Listar campanhas (GAQL) ─────────────────────────────────────────────────
+
+export async function listCampaigns(
+  mccId: string,
+  customerId: string,
+  devToken: string,
+  token: string,
+): Promise<import('@/lib/types').LiveCampaign[]> {
+  const cid = customerId.replace(/-/g, '').replace('customers/', '');
+  const mcc = mccId.replace(/-/g, '');
+
+  const query = `
+    SELECT campaign.id, campaign.name, campaign.status,
+           campaign.campaign_budget, campaign_budget.amount_micros
+    FROM campaign
+    WHERE campaign.status != 'REMOVED'
+    ORDER BY campaign.name ASC
+  `.trim();
+
+  const res = await fetch(`${BASE}/customers/${cid}/googleAds:searchStream`, {
+    method: 'POST',
+    headers: {
+      Authorization:       `Bearer ${token}`,
+      'developer-token':   devToken,
+      'login-customer-id': mcc,
+      'Content-Type':      'application/json',
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({})) as { error?: { message?: string } };
+    throw new Error(err.error?.message ?? 'Erro ao listar campanhas Google Ads');
+  }
+
+  const chunks = (await res.json()) as Array<{
+    results?: Array<{
+      campaign: { resourceName: string; name: string; status: string; campaignBudget: string };
+      campaignBudget?: { amountMicros: string };
+    }>;
+  }>;
+
+  return chunks.flatMap((c) => c.results ?? []).map((r) => ({
+    external_id:     r.campaign.resourceName,
+    name:            r.campaign.name,
+    status:          r.campaign.status as 'ENABLED' | 'PAUSED',
+    platform:        'google' as const,
+    daily_budget:    Number(r.campaignBudget?.amountMicros ?? 0) / 1_000_000,
+    budget_resource: r.campaign.campaignBudget,
+  }));
+}
+
 // ─── Métricas via SearchStream (GAQL) ────────────────────────────────────────
 // Agrega todos os chunks retornados pelo stream.
 // Valores financeiros chegam em micros — divide por 1.000.000.

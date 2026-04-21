@@ -24,6 +24,8 @@ export default function ClientModal({ open, onClose, onSave, agencyId, initial }
   const [fee, setFee] = useState('');
   const [status, setStatus] = useState<ClientStatus>('active');
   const [nextPayment, setNextPayment] = useState('');
+  const [googleCid, setGoogleCid] = useState('');
+  const [metaAdAccount, setMetaAdAccount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -34,8 +36,11 @@ export default function ClientModal({ open, onClose, onSave, agencyId, initial }
       setFee(String(initial.monthly_fee));
       setStatus(initial.status);
       setNextPayment(initial.next_payment_date ?? '');
+      setGoogleCid(initial.google_customer_id ?? '');
+      setMetaAdAccount(initial.meta_ad_account_id ?? '');
     } else {
       setName(''); setEmail(''); setFee(''); setStatus('active'); setNextPayment('');
+      setGoogleCid(''); setMetaAdAccount('');
     }
     setError('');
   }, [initial, open]);
@@ -58,6 +63,8 @@ export default function ClientModal({ open, onClose, onSave, agencyId, initial }
         monthly_fee: feeNum,
         status,
         next_payment_date: nextPayment || undefined,
+        google_customer_id: googleCid.trim() || undefined,
+        meta_ad_account_id: metaAdAccount.trim() || undefined,
       });
       onClose();
     } catch (e) {
@@ -142,6 +149,30 @@ export default function ClientModal({ open, onClose, onSave, agencyId, initial }
               onChange={(e) => setNextPayment(e.target.value)}
               className="w-full px-3 py-2.5 text-sm border border-[#E5E7EB] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6B00]/25 focus:border-[#FF6B00] transition-all"
             />
+          </div>
+
+          <div className="border-t border-[#F3F4F6] pt-4">
+            <p className="text-xs font-semibold text-[#9CA3AF] mb-3 uppercase tracking-wide">Contas de Anúncios</p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-[#6B7280] mb-1.5 block">Google Ads — Customer ID</label>
+                <input
+                  value={googleCid}
+                  onChange={(e) => setGoogleCid(e.target.value)}
+                  placeholder="ex: 1234567890"
+                  className="w-full px-3 py-2.5 text-sm border border-[#E5E7EB] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6B00]/25 focus:border-[#FF6B00] transition-all font-mono"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[#6B7280] mb-1.5 block">Meta Ads — Ad Account ID</label>
+                <input
+                  value={metaAdAccount}
+                  onChange={(e) => setMetaAdAccount(e.target.value)}
+                  placeholder="ex: act_1234567890"
+                  className="w-full px-3 py-2.5 text-sm border border-[#E5E7EB] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF6B00]/25 focus:border-[#FF6B00] transition-all font-mono"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex gap-3 pt-2">

@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { decrypt } from '@/lib/encryption';
 
-// GET /api/auth/meta/callback — troca code por token e salva
+// GET /api/auth/meta/callback — troca code por token usando credenciais da agência
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code     = searchParams.get('code');
@@ -18,13 +19,33 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(completeUrl(error ?? 'meta_auth_failed'));
   }
 
+  const supabase = await createClient();
+
+  // Busca e decripta credenciais da agência
+  const { data: creds } = await supabase
+    .from('agency_oauth_config')
+    .select('meta_app_id, meta_app_secret_enc')
+    .eq('agency_id', agencyId)
+    .single();
+
+  if (!creds?.meta_app_id || !creds?.meta_app_secret_enc) {
+    return NextResponse.redirect(completeUrl('Credenciais Meta não configuradas'));
+  }
+
+  let appSecret: string;
+  try {
+    appSecret = decrypt(creds.meta_app_secret_enc);
+  } catch {
+    return NextResponse.redirect(completeUrl('Erro ao decriptar credenciais'));
+  }
+
   // Troca code por access_token
   const tokenRes = await fetch('https://graph.facebook.com/v19.0/oauth/access_token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      client_id:     process.env.META_APP_ID ?? '',
-      client_secret: process.env.META_APP_SECRET ?? '',
+      client_id:     creds.meta_app_id,
+      client_secret: appSecret,
       redirect_uri:  `${appUrl}/api/auth/meta/callback`,
       code,
     }),
@@ -32,8 +53,7 @@ export async function GET(request: NextRequest) {
   const tokenData = await tokenRes.json();
 
   if (!tokenRes.ok || !tokenData.access_token) {
-    const msg = tokenData.error?.message ?? 'meta_token_failed';
-    return NextResponse.redirect(completeUrl(msg));
+    return NextResponse.redirect(completeUrl(tokenData.error?.message ?? 'meta_token_failed'));
   }
 
   // Busca contas de Ads do usuário
@@ -44,7 +64,6 @@ export async function GET(request: NextRequest) {
   const meData = await meRes.json();
   const account = meData.data?.[0];
 
-  const supabase = await createClient();
   const { error: dbError } = await supabase.from('integration_tokens').upsert({
     agency_id:     agencyId,
     provider:      'meta',

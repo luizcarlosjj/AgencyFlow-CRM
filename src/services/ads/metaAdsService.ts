@@ -122,6 +122,32 @@ export async function getCurrentBudget(adSetId: string, token: string): Promise<
   return Number(data.daily_budget ?? 0);
 }
 
+// ─── Listar campanhas ────────────────────────────────────────────────────────
+
+export async function listCampaigns(
+  adAccountId: string,
+  token: string,
+): Promise<import('@/lib/types').LiveCampaign[]> {
+  const id = adAccountId.startsWith('act_') ? adAccountId : `act_${adAccountId}`;
+  const fields = 'id,name,status,daily_budget,lifetime_budget';
+
+  const res = await fetch(`${BASE}/${id}/campaigns?fields=${fields}&limit=500`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message ?? 'Erro ao listar campanhas Meta');
+
+  return ((data.data ?? []) as Array<{
+    id: string; name: string; status: string; daily_budget?: string;
+  }>).map((c) => ({
+    external_id:  c.id,
+    name:         c.name,
+    status:       (c.status === 'ACTIVE' ? 'ACTIVE' : 'PAUSED') as 'ACTIVE' | 'PAUSED',
+    platform:     'meta' as const,
+    daily_budget: Number(c.daily_budget ?? 0) / 100,
+  }));
+}
+
 // ─── Métricas via /insights ───────────────────────────────────────────────────
 // Spec: level obrigatório + date_preset obrigatório
 
